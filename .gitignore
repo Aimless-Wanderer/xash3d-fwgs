@@ -64,6 +64,7 @@ ZERO_CHECK.*
 # Visual Studio
 *.obj
 *.dll
+*.exe
 *.exp
 *.lib
 *.suo
@@ -327,3 +328,6 @@ __pycache__
 *.vcproj
 *.sln
 *.vcxproj
+
+# Visual Studio CMake Settings
+CMakeSettings.json
