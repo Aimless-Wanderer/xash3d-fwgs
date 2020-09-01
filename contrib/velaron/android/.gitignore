@@ -9,3 +9,6 @@ gradle-app.setting
 # Android
 .externalNativeBuild
 .cxx/
+
+# PAK
+*.pak
