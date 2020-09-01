@@ -1,0 +1,43 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion = 29
+    buildToolsVersion = '29.0.3'
+    ndkVersion '21.0.6113669'
+
+    defaultConfig {
+        applicationId = 'su.xash.engine'
+        minSdkVersion 8
+        targetSdkVersion 29
+        versionCode = 1710
+        versionName = '0.20.1'
+    }
+
+    lintOptions {
+        abortOnError false
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_7
+        targetCompatibility JavaVersion.VERSION_1_7
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path file('../../CMakeLists.txt')
+        }
+    }
+}
+
+task makePak(type:Exec) {
+    commandLine 'python', 'makepak.py', 'xash-extras/', 'src/main/assets/extras.pak'
+} 
+
+preBuild.dependsOn(makePak)

@@ -5,6 +5,12 @@ set(XASH_ENGINE_SRC_DIR "${XASH_SRC_DIR}/engine")
 set(XASH_ENGINE xash)
 
 file(GLOB_RECURSE XASH_ENGINE_SRC "${XASH_ENGINE_SRC_DIR}/common/*.c" "${XASH_ENGINE_SRC_DIR}/server/*.c")
+file(GLOB_RECURSE XASH_ANDROID_SRC
+	"${XASH_ENGINE_SRC_DIR}/platform/posix/*.c"
+	"${XASH_ENGINE_SRC_DIR}/platform/linux/*.c"
+	"${XASH_ENGINE_SRC_DIR}/platform/android/*.c"
+	"${XASH_ENGINE_SRC_DIR}/platform/android/*.cpp"
+	)
 file(GLOB_RECURSE XASH_WIN32_SRC "${XASH_ENGINE_SRC_DIR}/platform/win32/*.c")
 file(GLOB_RECURSE XASH_SDL_SRC "${XASH_ENGINE_SRC_DIR}/platform/sdl/*.c")
 file(GLOB_RECURSE XASH_CLIENT_SRC "${XASH_ENGINE_SRC_DIR}/client/*.c")
@@ -27,7 +33,11 @@ if(WIN32)
 	list(APPEND XASH_ENGINE_SRC ${XASH_WIN32_SRC})
 endif()
 
-if(XASH_SDL)
+if(ANDROID)
+	list(APPEND XASH_ENGINE_SRC ${XASH_ANDROID_SRC})
+endif()
+
+if(XASH_SDL AND NOT ANDROID)
 	list(APPEND XASH_ENGINE_SRC ${XASH_SDL_SRC})
 endif()
 
@@ -55,7 +65,7 @@ if(WIN32)
 	target_link_libraries(${XASH_ENGINE} dbghelp psapi ws2_32)
 endif()
 
-if(XASH_SDL)
+if(XASH_SDL AND NOT ANDROID)
 	add_definitions(-DXASH_SDL=2)
 	set(SDL2_BUILDING_LIBRARY ${XASH_SINGLE_BINARY})
 	find_package(SDL2)
@@ -63,12 +73,16 @@ if(XASH_SDL)
 	target_link_libraries(${XASH_ENGINE} ${SDL2_LIBRARY})
 endif()
 
-target_link_libraries(${XASH_ENGINE} public)
+if(ANDROID)
+	target_link_libraries(${XASH_ENGINE} public log)
+else()
+	target_link_libraries(${XASH_ENGINE} public)
 
-install(
-	TARGETS ${XASH_ENGINE}
-	DESTINATION .
-)
+	install(
+		TARGETS ${XASH_ENGINE}
+		DESTINATION .
+	)
+endif()
 
 if(WIN32 AND MSVC)
 	install(
