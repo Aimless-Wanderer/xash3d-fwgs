@@ -16,10 +16,9 @@ GNU General Public License for more details.
 #if XASH_LIB == LIB_WIN32
 #include "common.h"
 #include "library.h"
-
-#ifdef XASH_64BIT
 #include <dbghelp.h>
 
+#ifdef XASH_64BIT
 void *COM_LoadLibrary( const char *dllname, int build_ordinals_table )
 {
 	return LoadLibraryA( dllname );
@@ -953,12 +952,12 @@ table_error:
 
 qboolean COM_CheckLibraryDirectDependency( const char *name, const char *depname, qboolean directpath )
 {
-	PIMAGE_DOS_HEADER	dos_header;
-	PIMAGE_NT_HEADERS	old_header;
-	PIMAGE_DATA_DIRECTORY	directory;
+	PIMAGE_DOS_HEADER dos_header;
+	PIMAGE_NT_HEADERS old_header;
+	PIMAGE_DATA_DIRECTORY directory;
 	PIMAGE_IMPORT_DESCRIPTOR importDesc;
-	string errorstring;
-	void		*data = NULL;
+	string errorstring = { 0 };
+	void *data = NULL;
 	dll_user_t *hInst;
 
 	hInst = FS_FindLibrary( name, directpath );
@@ -974,14 +973,14 @@ qboolean COM_CheckLibraryDirectDependency( const char *name, const char *depname
 		goto libraryerror;
 	}
 
-	dos_header = ( PIMAGE_DOS_HEADER )data;
+	dos_header = (PIMAGE_DOS_HEADER)data;
 	if( dos_header->e_magic != IMAGE_DOS_SIGNATURE )
 	{
 		Q_snprintf( errorstring, sizeof( errorstring ), "%s it's not a valid executable file", name );
 		goto libraryerror;
 	}
 
-	old_header = ( PIMAGE_NT_HEADERS )&( ( const byte * )( data ) )[dos_header->e_lfanew];
+	old_header = (PIMAGE_NT_HEADERS)&( (const byte *)data)[dos_header->e_lfanew];
 	if( old_header->Signature != IMAGE_NT_SIGNATURE )
 	{
 		Q_snprintf( errorstring, sizeof( errorstring ), "%s missing PE header", name );
@@ -992,15 +991,15 @@ qboolean COM_CheckLibraryDirectDependency( const char *name, const char *depname
 	
 	if( directory->Size <= 0 )
 	{
-		Q_snprintf( errorstring, sizeof( errorstring ), "%s has no dependencies. Is this dll valid?\n" );
+		Q_snprintf( errorstring, sizeof( errorstring ), "%s has no dependencies. Is this dll valid?\n", name );
 		goto libraryerror;
 	}
 
-	importDesc = (PIMAGE_IMPORT_DESCRIPTOR)CALCULATE_ADDRESS( data, directory->VirtualAddress );
+	importDesc = (PIMAGE_IMPORT_DESCRIPTOR)ImageRvaToVa( old_header, data, old_header->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress, NULL );
 
-	for( ; !IsBadReadPtr( importDesc, sizeof( IMAGE_IMPORT_DESCRIPTOR)) && importDesc->Name; importDesc++ )
+	for( ; !IsBadReadPtr( importDesc, sizeof( IMAGE_IMPORT_DESCRIPTOR ) ) && importDesc->Name; importDesc++ )
 	{
-		const char *importName = ( const char* )CALCULATE_ADDRESS( data, importDesc->Name );
+		const char *importName = ImageRvaToVa( old_header, data, importDesc->Name, NULL );
 		Con_Reportf( "library %s has direct dependency %s\n", name, importName );
 
 		if( !Q_stricmp( importName, depname ) )
@@ -1011,7 +1010,7 @@ qboolean COM_CheckLibraryDirectDependency( const char *name, const char *depname
 	}
 
 libraryerror:
-	Con_Printf( errorstring );
+	if( errorstring && errorstring[0] ) Con_Printf( errorstring );
 	if( data ) Mem_Free( data ); // release memory
 	return false;
 }
